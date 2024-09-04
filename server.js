@@ -83,10 +83,10 @@ client.once("ready", () => {
     "45 11,14,17 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
     sendStatusMessage
   );
-  cron.schedule(
-    "46 12 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
-    sendStatusMessage
-  );
+  // cron.schedule(
+  //   "46 12 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+  //   sendStatusMessage
+  // );
 
   // cron.schedule("30 13 * * Saturday", () => {
   //   const guild = client.guilds.cache.get("789365405063577600");
