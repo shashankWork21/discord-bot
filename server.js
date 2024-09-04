@@ -25,6 +25,7 @@ client.once("ready", () => {
       "889391323386359849",
       "803887520483770368",
       "808932563094601738",
+      "1163903275402285106",
     ];
     console.log(new Date());
     const statuses = {
@@ -67,7 +68,11 @@ client.once("ready", () => {
       }
       `;
       console.log(statusMessage);
-      channel.send(statusMessage);
+      try {
+        channel.send(statusMessage);
+      } catch (error) {
+        console.log(error);
+      }
     });
   };
   cron.schedule(
@@ -76,6 +81,10 @@ client.once("ready", () => {
   );
   cron.schedule(
     "45 11,14,17 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+    sendStatusMessage
+  );
+  cron.schedule(
+    "46 12 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
     sendStatusMessage
   );
 
@@ -91,6 +100,16 @@ client.once("ready", () => {
 client.login(
   "MTI1NDc2MzI3MzE1NzQ3NjQ2Mw.GuG2JT.ux7Km38gMux96V0RrMjoLUqk32TDtThi7Jh7Fw"
 );
+
+function messageFilter(message) {
+  const startTimestamp = new Date("2024-08-01").getTime();
+  const endTimeStamp = new Date("2024-09-01").getTime();
+  return (
+    message.author.id === "1254763273157476463" &&
+    message.createdTimestamp > startTimestamp &&
+    message.createdTimestamp < endTimeStamp
+  );
+}
 
 app.get("/", async (req, res) => {
   const guild = client.guilds.cache.get("789365405063577600");
@@ -119,7 +138,12 @@ app.get("/", async (req, res) => {
 
   const attendanceCount = {};
 
-  for (const message of attendanceMessages.map((message) => message.content)) {
+  fs.writeFileSync("messages.json", JSON.stringify(attendanceMessages));
+
+  for (const messageInstance of attendanceMessages.filter((message) =>
+    messageFilter(message)
+  )) {
+    const message = messageInstance.content;
     const statuses = message.split("\n");
     const idleMessage = statuses.find((status) => status.includes("Idle"));
     const dndMessage = statuses.find((status) =>
