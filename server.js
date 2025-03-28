@@ -108,8 +108,7 @@ client.once("ready", () => {
     sendStatusMessage
   );
 
-  cron.schedule(`${randomMinute1} 10,13 * * Saturday`, sendStatusMessage);
-  cron.schedule(`${randomMinute2} 11 * * Saturday`, sendStatusMessage);
+  cron.schedule(`12 10,11,12,13 * * Saturday`, sendStatusMessage);
 });
 
 client.login(discordToken);
