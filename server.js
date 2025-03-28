@@ -104,13 +104,10 @@ client.once("ready", () => {
     });
   };
   cron.schedule(
-    `${randomMinute1} 10,13,16 * * Monday,Tuesday,Wednesday,Thursday,Friday`,
+    `12 10,11,12,13,14,15,16,17 * * Monday,Tuesday,Wednesday,Thursday,Friday`,
     sendStatusMessage
   );
-  cron.schedule(
-    `${randomMinute2} 11,14,17 * * Monday,Tuesday,Wednesday,Thursday,Friday`,
-    sendStatusMessage
-  );
+
   cron.schedule(`${randomMinute1} 10,13 * * Saturday`, sendStatusMessage);
   cron.schedule(`${randomMinute2} 11 * * Saturday`, sendStatusMessage);
 });
