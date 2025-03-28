@@ -1,10 +1,16 @@
+require("dotenv").config();
+
 const express = require("express");
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const cron = require("node-cron");
 const fs = require("fs");
 
 const app = express();
 const port = 5001;
+
+const guildId = process.env.GUILD_ID;
+const channelId = process.env.CHANNEL_ID;
+const discordToken = process.env.DISCORD_TOKEN;
 
 const client = new Client({
   intents: [
@@ -13,19 +19,38 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.DirectMessages,
   ],
+  partials: [Partials.Channel],
 });
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const randomMinute1 = getRandomInt(10, 21);
+const randomMinute2 = getRandomInt(40, 51);
+
+const attendance = {};
+
+console.log(randomMinute1);
+console.log(randomMinute2);
 
 client.once("ready", () => {
   const sendStatusMessage = () => {
-    const guild = client.guilds.cache.get("789365405063577600");
-    const channel = guild.channels.cache.get("820906455716200478");
+    const guild = client.guilds.cache.get(guildId);
+    const channel = guild.channels.cache.get(channelId);
     const unavailableMemberIds = [
       "750112234474176593",
       "889391323386359849",
-      "803887520483770368",
       "808932563094601738",
       "1163903275402285106",
+      "1331144477787557956",
+      "785045668465082380",
+      "802135058541576192",
+      "1290554851477946402",
+      "976754431070728212",
+      "1317012834785427498",
     ];
     console.log(new Date());
     const statuses = {
@@ -35,6 +60,9 @@ client.once("ready", () => {
       offline: [],
     };
     guild.members.fetch({ withPresences: true }).then((members) => {
+      setTimeout(() => {
+        fs.writeFileSync("members.json", JSON.stringify(members));
+      }, 20 * 60 * 1000);
       members
         .filter(
           (member) =>
@@ -76,44 +104,32 @@ client.once("ready", () => {
     });
   };
   cron.schedule(
-    "15 10,13,16 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+    `${randomMinute1} 10,13,16 * * Monday,Tuesday,Wednesday,Thursday,Friday`,
     sendStatusMessage
   );
   cron.schedule(
-    "45 11,14,17 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+    `${randomMinute2} 11,14,17 * * Monday,Tuesday,Wednesday,Thursday,Friday`,
     sendStatusMessage
   );
-  // cron.schedule(
-  //   "46 12 * * Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
-  //   sendStatusMessage
-  // );
-
-  // cron.schedule("30 13 * * Saturday", () => {
-  //   const guild = client.guilds.cache.get("789365405063577600");
-  //   const channel = guild.channels.cache.get("820906455716200478");
-  //   channel.send(
-  //     "<@1008971073154449418>, All the best! You have my best wishes! :)"
-  //   );
-  // });
+  cron.schedule(`${randomMinute1} 10,13 * * Saturday`, sendStatusMessage);
+  cron.schedule(`${randomMinute2} 11 * * Saturday`, sendStatusMessage);
 });
 
-client.login(
-  "MTI1NDc2MzI3MzE1NzQ3NjQ2Mw.GuG2JT.ux7Km38gMux96V0RrMjoLUqk32TDtThi7Jh7Fw"
-);
+client.login(discordToken);
 
 function messageFilter(message) {
-  const startTimestamp = new Date("2024-08-01").getTime();
-  const endTimeStamp = new Date("2024-09-01").getTime();
+  const startTimestamp = new Date("2025-02-01").getTime();
+  const endTimeStamp = new Date("2025-03-01").getTime();
   return (
     message.author.id === "1254763273157476463" &&
-    message.createdTimestamp > startTimestamp &&
-    message.createdTimestamp < endTimeStamp
+    message.createdTimestamp >= startTimestamp &&
+    message.createdTimestamp <= endTimeStamp
   );
 }
 
 app.get("/", async (req, res) => {
-  const guild = client.guilds.cache.get("789365405063577600");
-  const channel = guild.channels.cache.get("820906455716200478");
+  const guild = client.guilds.cache.get(guildId);
+  const channel = guild.channels.cache.get(channelId);
   let messages = await channel.messages.fetch({ limit: 100 });
   const attendanceMessages = Array.from(
     messages.filter((message) => message.author.id === "1254763273157476463"),
@@ -138,7 +154,10 @@ app.get("/", async (req, res) => {
 
   const attendanceCount = {};
 
-  fs.writeFileSync("messages.json", JSON.stringify(attendanceMessages));
+  // fs.writeFileSync("messages.json", JSON.stringify(attendanceMessages));
+  console.log(
+    attendanceMessages.filter((message) => messageFilter(message)).length
+  );
 
   for (const messageInstance of attendanceMessages.filter((message) =>
     messageFilter(message)
@@ -210,10 +229,65 @@ app.get("/", async (req, res) => {
       }
     }
   }
-  fs.writeFileSync("attendance.json", JSON.stringify(attendanceCount));
+  fs.writeFileSync("attendance-feb.json", JSON.stringify(attendanceCount));
   res.json({
-    attendanceCount,
+    done: "done",
   });
+});
+
+app.get("/brb", async (req, res) => {
+  const startTimestamp = new Date("2024-08-21").getTime();
+  const guild = client.guilds.cache.get(guildId);
+  const channel = guild.channels.cache.get(channelId);
+  console.log(channel);
+  let messages = await channel.messages.fetch({ limit: 100 });
+  const brbMessages = Array.from(
+    messages.filter((message) => {
+      return (
+        (message.content.toLowerCase().includes("brb") ||
+          message.content.toLowerCase().includes("break") ||
+          message.content.toLowerCase().includes("back")) &&
+        !message.content.toLowerCase().includes("lunch")
+      );
+    }),
+    ([key, value]) => value
+  );
+  do {
+    const keys = messages.map((message) => parseInt(message.id));
+    const lastKey = `${Math.min(...keys)}`;
+    messages = await channel.messages.fetch({ limit: 100, before: lastKey });
+    brbMessages.push(
+      ...Array.from(
+        messages.filter((message) => {
+          return (
+            (message.content.toLowerCase().includes("brb") ||
+              message.content.toLowerCase().includes("break") ||
+              message.content.toLowerCase().includes("back")) &&
+            !message.content.toLowerCase().includes("lunch")
+          );
+        }),
+        ([key, value]) => value
+      )
+    );
+  } while (
+    messages.every((message) => message.createdTimestamp > startTimestamp)
+  );
+
+  console.log(brbMessages[0]);
+
+  const brbCount = {};
+  for (const message of brbMessages) {
+    const author = message.author.globalName;
+    if (!brbCount[author]) {
+      brbCount[author] = 1;
+    } else {
+      brbCount[author] = brbCount[author] + 1;
+    }
+  }
+
+  fs.writeFileSync("brbmessages.json", JSON.stringify(brbMessages));
+  console.log(brbMessages.length);
+  res.json({ brbCount });
 });
 
 app.listen(port, () => {
